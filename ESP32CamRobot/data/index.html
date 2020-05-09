@@ -1,0 +1,328 @@
+<html>
+  <head>
+    <title>Auto Picking Robot</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  </head>
+  <style>
+  html, body {
+    margin:0;
+    padding:0;
+    height:100%
+  }
+  body{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  .wrap {
+    display:table;
+    width:100%;
+    max-width:980px;
+    margin:auto;
+    border-collapse:collapse;
+    table-layout:fixed;
+    height:100%;/* we can use 100% here in stead of min-height because display:table always treats height as a minimum and will automatically accomodate content*/
+  }
+  .button{
+    background-color:transparent; 
+    border-color:transparent;
+  }
+
+  #container
+  {
+    width:100%; 
+    height:100%; 
+    position: relative;
+  }
+
+  #wheelCanvas
+  {
+    top: 0px;
+    left: 0px;
+    position: absolute;
+    background-color: rgba(255,255,255,.1);
+    z-index: 3;
+  }
+
+  #imgCanvas
+  {
+    top: 0px;
+    left: 0px;
+    position: absolute;
+    background-color: rgba(255,255,255,.1);
+    z-index: 3;
+  }
+
+  th, tr, td {
+      border: 1px solid black;
+  }
+
+  table td.shrink {
+    white-space:nowrap;
+    height: 100px
+  }
+
+  img {
+    max-width: 100%;
+    /* pointer-events: none; */
+  }
+  .button{
+    height:100;
+    width:100;
+  }
+  .img{
+    height: 420px;
+    width: 640px;
+  }
+
+  body {
+    overscroll-behavior: contain;
+  }
+
+  </style>
+  <body>
+    <div id="container">
+      <table width = "800" align="center" position="absolute">
+        <tr>
+          <td align="center" class="shrink">
+            <div class="button" id="UP" ontouchstart="mouseDownHead(this.id)" ontouchend="mouseUpHead(this.id)"><img id="UPIMG" src="icons/up_off.png" class="button"></div>
+          </td>
+          <td align="center" class="shrink">
+            <div class="button" id="PICK" onclick="mouseClick(this.id)"><img id="PICKIMG" src="icons/pick_off.png" class="button"></div>
+          </td>
+          <td rowspan="5">
+            <img src="" class="img" id="STREAM">
+          </td>
+        </tr>
+          <td align="center" class="shrink">
+            <div class="button" id="DOWN" ontouchstart="mouseDownHead(this.id)" ontouchend="mouseUpHead(this.id)"><img id="DOWNIMG" src="icons/down_off.png" class="button"></div>
+          </td>
+          <td align="center" class="shrink">
+            <div class="button" id="LED" onclick="mouseClick(this.id)"><img id="LEDIMG" src="icons/led_off.png" class="button"></div>
+          </td>
+        <tr>
+        </tr>
+        <tr>
+          <td rowspan="2" colspan="2" text-align:center; vertical-align:middle>
+            <img style="max-width: 100%; max-height:60%;" id="MOVE" src="icons/move_off.png">
+          </td>
+        </tr>
+      </table>
+      <canvas id="wheelCanvas" ontouchmove="onWheelMove(this.id, event)" ontouchstart="mouseDown(this.id, event)" ontouchend="mouseUp(this.id)"></canvas>
+    </div>
+    <script>
+
+    var init = false;
+
+    $(window).on('load', function() {
+      var imgMovePos = document.getElementById("MOVE").getBoundingClientRect();
+      var canvas = document.getElementById("wheelCanvas");
+      canvas.style.top = imgMovePos.top;
+      canvas.style.left = imgMovePos.left;
+      canvas.width = imgMovePos.width;
+      canvas.height = imgMovePos.height;
+      var context = canvas.getContext('2d');
+      context.beginPath();
+      context.arc(canvas.width/2, canvas.height/2, 36, 0, 2 * Math.PI, false);
+      context.fillStyle = 'green';
+      context.fill();
+    })
+
+    $(document).ready(function () {
+      if (!('WebSocket' in window)) {
+        alert('Your browser does not support websockets');
+      }else{
+        configWebSocket();
+      }
+    });
+
+    function configWebSocket(){
+      var server = 'ws://'+document.location.href+':86';
+      server = server.replace('http://','').replace('/:',':')
+      var socket = new WebSocket(server);
+      socket.binaryType = 'arraybuffer';
+      if(socket){
+        socket.onopen = function(){
+        }
+        socket.onmessage = async function(msg){
+          var bytes = new Uint8Array(msg.data);
+          var binary= '';
+          var len = bytes.byteLength;
+          for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i])
+          }
+          var img = document.getElementById('STREAM');
+          img.src = 'data:image/jpg;base64,'+window.btoa(binary);
+
+          if(init==false){
+            var imgMovePos = document.getElementById("MOVE").getBoundingClientRect();
+            var canvas = document.getElementById("wheelCanvas");
+            canvas.style.top = imgMovePos.top;
+            canvas.style.left = imgMovePos.left;
+            canvas.width = imgMovePos.width;
+            canvas.height = imgMovePos.height;
+            var context = canvas.getContext('2d');
+            // context.clearRect(0, 0, canvas.width, canvas.height);
+            context.beginPath();
+            context.arc(canvas.width/2, canvas.height/2, 36, 0, 2 * Math.PI, false);
+            context.fillStyle = 'green';
+            context.fill();
+            init = true;
+          }
+        }
+        socket.onclose = function(){
+          showServerResponse('The connection has been closed.');
+        }
+      }
+    }
+
+    function onWheelMove(id, event){
+      var imgMovePos = document.getElementById("wheelCanvas").getBoundingClientRect();
+      var x = event.touches[0].clientX;
+      var y = event.touches[0].clientY;
+      var delta_x = Math.round(x - (imgMovePos.left+imgMovePos.right)/2,2);
+      var delta_y = Math.round((imgMovePos.top+imgMovePos.bottom)/2-y,2);
+      if(delta_x*delta_x+delta_y*delta_y>100*100){
+        return;
+      }
+      var url="/MOVE"+"?val="+delta_x+","+delta_y;
+      sendCommand(url);
+
+      var canvas = document.getElementById('wheelCanvas');
+      var context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.beginPath();
+      context.arc(x - imgMovePos.left, y - imgMovePos.top, 36, 0, 2 * Math.PI, false);
+      context.fillStyle = 'green';
+      context.fill();
+    }
+
+    function mouseDown(id, event){
+      var imgMovePos = document.getElementById("wheelCanvas").getBoundingClientRect();
+      var x = event.touches[0].clientX;
+      var y = event.touches[0].clientY;
+      var delta_x = Math.round(x - (imgMovePos.left+imgMovePos.right)/2,2);
+      var delta_y = Math.round((imgMovePos.top+imgMovePos.bottom)/2-y,2);
+      var url="/MOVE"+"?val="+delta_x+","+delta_y;
+      if(delta_x*delta_x+delta_y*delta_y>100*100){
+        return;
+      }
+      sendCommand(url);
+
+      var canvas = document.getElementById('wheelCanvas');
+      var context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.beginPath();
+      context.arc(x - imgMovePos.left, y - imgMovePos.top, 36, 0, 2 * Math.PI, false);
+      context.fillStyle = 'green';
+      context.fill();
+      // context.lineWidth = 2;
+      // context.strokeStyle = 'green';
+      // context.stroke();
+    }
+
+    function mouseUp(id)
+    {
+      img_src = "icons/"+id.toLowerCase()+"_off.png";
+      document.getElementById(id).src = img_src;
+      var url="/MOVE"+"?val=0,0"
+      sendCommand(url);
+      sendCommand(url);
+      sendCommand(url);
+      sendCommand(url);
+      var canvas = document.getElementById('wheelCanvas');
+      var context = canvas.getContext('2d');
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      var context = canvas.getContext('2d');
+      context.beginPath();
+      context.arc(canvas.width/2, canvas.height/2, 36, 0, 2 * Math.PI, false);
+      context.fillStyle = 'green';
+      context.fill();
+    }
+
+    function mouseDownHead(id){
+      img_src = "icons/"+id.toLowerCase()+"_on.png";
+      document.getElementById(id+'IMG').src = img_src;
+      var url="/"+id+"?val=ON";
+      sendCommand(url);
+    }
+
+    function mouseUpHead(id){
+      img_src = "icons/"+id.toLowerCase()+"_off.png";
+      document.getElementById(id+'IMG').src = img_src;
+      var url="/"+id+"?val=OFF";
+      sendCommand(url);
+    }
+
+    function sendCommand(url){
+      var xhr = new XMLHttpRequest();
+      //xhr.onreadystatechange=ProcessResponse;
+      xhr.open("GET",url, true);
+      xhr.overrideMimeType('text/plain; charset=x-user-defined');
+      xhr.send(null);
+      xhr.onreadystatechange = function() {
+      if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
+          
+        }
+      }
+    }
+
+    var ledState = false;
+    var pickState = false
+    function mouseClick(id){
+      if(id == "LED"){
+        ledState = !ledState;
+        if(ledState){
+          document.getElementById("LEDIMG").src = "icons/led_on.png";
+        }else{
+          document.getElementById("LEDIMG").src = "icons/led_off.png";
+        }
+        var ledStateStr = ledState ? "ON" : "OFF"
+        var url="/"+id+"?val="+ledStateStr;
+        var xhr = new XMLHttpRequest();
+        //xhr.onreadystatechange=ProcessResponse;
+        xhr.open("GET",url, true);
+        xhr.overrideMimeType('text/plain; charset=x-user-defined');
+        xhr.send(null);
+        xhr.onreadystatechange = function() {
+        if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
+            
+          }
+        }
+      }else{
+        if(id == "PICK"){
+          pickState = !pickState;
+          if(pickState){
+            document.getElementById("PICKIMG").src = "icons/pick_on.png";
+          }else{
+            document.getElementById("PICKIMG").src = "icons/pick_off.png";
+          }
+          pickStateStr = pickState ? "ON" : "OFF"
+          var url="/"+id+"?val="+pickStateStr;
+          var xhr = new XMLHttpRequest();
+          //xhr.onreadystatechange=ProcessResponse;
+          xhr.open("GET",url, true);
+          xhr.overrideMimeType('text/plain; charset=x-user-defined');
+          xhr.send(null);
+          xhr.onreadystatechange = function() {
+          if (xhr.readyState == XMLHttpRequest.DONE && xhr.status == 200) {
+              
+            }
+          }
+        }
+      }
+    }
+
+    window.oncontextmenu = function(event) {
+     event.preventDefault();
+     event.stopPropagation();
+     return false;
+    };
+
+  </script>
+  </body>
+</html>
