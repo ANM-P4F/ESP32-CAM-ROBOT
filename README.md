@@ -1,7 +1,7 @@
 # ESP32-CAM Simple Surveillance RC Robot #
 
 ## Demonstration
-[![ESP32-CAM: Simple Surveillance RC Robot](http://img.youtube.com/vi/QGvPSxRkLMk/0.jpg)](https://www.youtube.com/watch?v=QGvPSxRkLMk "ESP32-CAM: Simple Surveillance RC Robot")
+[![ESP32-CAM: Simple Surveillance RC Car](http://img.youtube.com/vi/xvkwcLCyFT0/0.jpg)](https://www.youtube.com/watch?v=xvkwcLCyFT0 "ESP32-CAM: Simple Surveillance RC Car")
 
 ## Dependencies
 
