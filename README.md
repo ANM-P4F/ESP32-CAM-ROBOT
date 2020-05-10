@@ -8,7 +8,7 @@
 1. For ESP32-CAM module:
 Download https://github.com/Links2004/arduinoWebSockets as zip file and add this library to your Arduino Libraries by Sketch/Include Library/Add Zip...<br/>
 Download https://github.com/me-no-dev/ESPAsyncWebServer as zip file and add this library to your Arduino Libraries by Sketch/Include Library/Add Zip...<br/>
-Download https://github.com/me-no-dev/AsyncTCP as zip file and add this library to your Arduino Libraries by Sketch/Include Library/Add Zip...<br/>:
+Download https://github.com/me-no-dev/AsyncTCP as zip file and add this library to your Arduino Libraries by Sketch/Include Library/Add Zip...<br/>
 
 2. For Arduino module:<br/>
 Install arduinoSTL by [Manage Libraries...]<br/>
