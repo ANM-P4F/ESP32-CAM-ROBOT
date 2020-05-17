@@ -56,6 +56,7 @@ const unsigned long intervalServo = 100;
 bool reqUp = false;
 bool reqDown = false;
 int posServo = 90;
+uint8_t angleMax = 180;
 
 void setup(void) {
 
@@ -167,8 +168,8 @@ void setup(void) {
   pinMode(PIN_LED, OUTPUT);
 }
 
-void servoWrite(uint8_t channel, uint32_t value, uint32_t valueMax = 180) {
-  uint32_t duty = (8191 / valueMax) * min(value, valueMax);
+void servoWrite(uint8_t channel, uint8_t value) {
+  uint32_t duty = (8191 / angleMax) * min(angle, angleMax);
   ledcWrite(channel, duty);
 }
 
